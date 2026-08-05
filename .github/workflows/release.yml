@@ -59,8 +59,10 @@ jobs:
           upload-artifact: false
       - name: Analisar SBOM CycloneDX
         run: |
-          docker run --rm -v "$PWD:/work" cyclonedx/cyclonedx-cli:0.27.2 \
-            analyze --input-file /work/sbom.cdx.json --output-format json --output-file /work/license-analysis.json
+          docker run --rm -v "$PWD:/work:ro" cyclonedx/cyclonedx-cli:0.27.2 \
+            analyze --input-file /work/sbom.cdx.json --output-format json \
+            > license-analysis.json
+          test -s license-analysis.json
       - uses: open-policy-agent/setup-opa@v2
         with:
           version: 0.68.0
