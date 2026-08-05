@@ -3,3 +3,6 @@ evidencias/release-*/
 
 # Saidas locais geradas pela auditoria
 relatorios/
+
+# Roteiro local usado durante a apresentacao
+APRESENTACAO.md

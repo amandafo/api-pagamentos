@@ -41,7 +41,6 @@ flowchart LR
 | `scripts/` | Submissão ao Dependency-Track e relatório mensal |
 | `monitoring/` | Grafana/Prometheus reproduzível com cinco KPIs |
 | `evidencias/` | Exemplos e evidências reais do admission controller, deployment, health check e dashboard |
-| `APRESENTACAO.md` | Roteiro cronometrado para a banca |
 
 ## Execução local
 
