@@ -2,6 +2,8 @@
 
 Projeto integrador que transforma uma API Node.js mínima em uma cadeia de entrega verificável. Um pull request executa testes da aplicação, 15 testes de cinco policies Rego, build/scan do container e validação do SBOM. Uma tag `v*` publica a imagem no GHCR por digest, gera SBOM CycloneDX e SPDX, aplica a allowlist de licenças, bloqueia vulnerabilidades altas/críticas, assina com Cosign keyless/OIDC, anexa atestações e produz SLSA Provenance. O admission controller recusa imagens que não satisfaçam assinatura, identidade, SBOM e provenance.
 
+A versão `v1.0.2` foi validada de ponta a ponta: o pipeline terminou com sucesso, a imagem assinada foi aceita pelo Kubernetes, a versão sem as provas exigidas foi bloqueada e a API respondeu ao health check. O dashboard também foi executado localmente com os cinco indicadores.
+
 ## Arquitetura e decisões
 
 ```mermaid
@@ -35,10 +37,10 @@ flowchart LR
 | `.github/workflows/release.yml` | Build, SBOMs, licenças, assinatura, atestações, SLSA e release |
 | `.github/workflows/monthly-audit.yml` | Auditoria mensal automatizada |
 | `policies/rego/` e `policies/tests/` | Cinco controles e testes positivos/negativos |
-| `k8s/` | Workload hardened, namespace restricted e `ClusterImagePolicy` bloqueante |
+| `k8s/` | Workload hardened, namespace restricted e três `ClusterImagePolicy` bloqueantes |
 | `scripts/` | Submissão ao Dependency-Track e relatório mensal |
 | `monitoring/` | Grafana/Prometheus reproduzível com cinco KPIs |
-| `evidencias/` | Saídas demonstrativas versionadas; evidência real nasce no pipeline |
+| `evidencias/` | Exemplos e evidências reais do admission controller, deployment, health check e dashboard |
 | `APRESENTACAO.md` | Roteiro cronometrado para a banca |
 
 ## Execução local
@@ -67,12 +69,12 @@ As cinco policies são: baseline da imagem, allowlist de licenças, integridade 
 1. Crie o repositório e habilite GitHub Actions e GitHub Packages.
 2. Mantenha as permissões padrão restritas; cada job declara somente as permissões necessárias.
 3. Para Dependency-Track real, cadastre `DEPENDENCY_TRACK_URL` e `DEPENDENCY_TRACK_API_KEY`. Sem ambos, o job registra `mode=mock` e ainda deixa evidência.
-4. Troque `OWNER` em `k8s/policy-controller-policy.yaml`, `k8s/deployment.yaml` e `k8s/demo-unsigned.yaml` pelo owner real.
-5. Faça push de uma tag semântica:
+4. Neste repositório, os manifests já apontam para `ghcr.io/amandafo/api-pagamentos`. Em um fork, substitua `amandafo` e `api-pagamentos` pelo owner e nome do novo repositório.
+5. Para criar uma nova release depois da versão validada, faça push da próxima tag semântica:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.3
+git push origin v1.0.3
 ```
 
 O workflow cria o release sem aprovação manual. Seus assets são `sbom.cdx.json`, `sbom.spdx.json`, `license-analysis.json`, `trivy.json` e `dependency-track.log`. A imagem e todas as verificações usam o digest produzido pelo build.
@@ -81,29 +83,71 @@ Verificação independente (substitua os valores):
 
 ```bash
 export TARGET='ghcr.io/OWNER/api-pagamentos@sha256:DIGEST'
-export IDENTITY='https://github.com/OWNER/api-pagamentos/.github/workflows/release.yml@refs/tags/v1.0.0'
+export IDENTITY='https://github.com/OWNER/api-pagamentos/.github/workflows/release.yml@refs/tags/v1.0.2'
 cosign verify "$TARGET" --certificate-identity "$IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com
 cosign verify-attestation "$TARGET" --type cyclonedx --certificate-identity "$IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com
 cosign verify-attestation "$TARGET" --type slsaprovenance --certificate-identity-regexp '^https://github.com/slsa-framework/slsa-github-generator/' --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
+Na verificação acima, use `OWNER`, `DIGEST` e a tag correspondentes à release que deseja consultar. A release validada neste projeto está disponível em [v1.0.2](https://github.com/amandafo/api-pagamentos/releases/tag/v1.0.2).
+
 ## Gate de admissão
 
-Instale o Sigstore Policy Controller no cluster conforme a documentação da distribuição e aplique os manifests depois de substituir `OWNER`:
+Para reproduzir a demonstração local, crie um cluster Kind:
+
+```bash
+kind create cluster --name compliance --wait 5m
+kubectl get nodes
+```
+
+Instale o Sigstore Policy Controller com Helm:
+
+```bash
+helm repo add sigstore https://sigstore.github.io/helm-charts
+helm repo update
+kubectl create namespace cosign-system
+helm install policy-controller --namespace cosign-system sigstore/policy-controller
+kubectl wait --namespace cosign-system --for=condition=Available deployment --all --timeout=180s
+```
+
+Depois aplique o namespace e as três políticas, que verificam assinatura, SBOM e SLSA Provenance:
 
 ```bash
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/policy-controller-policy.yaml
-kubectl apply -f k8s/deployment.yaml
+kubectl get clusterimagepolicy
 ```
 
-Teste adversarial obrigatório:
+Teste primeiro a imagem sem as provas exigidas:
 
 ```bash
 kubectl apply -f k8s/demo-unsigned.yaml
 ```
 
-A requisição deve falhar no admission webhook com `no matching signatures`. O policy controller também exige atestações CycloneDX e SLSA. Capture a saída real para a banca; o arquivo `evidencias/admission-denied-exemplo.txt` documenta o formato esperado, não se apresenta como execução real.
+O erro com `no signatures found` e `no matching attestations` é o resultado esperado. Ele demonstra que a imagem foi recusada antes de criar o pod.
+
+Em seguida, valide e aplique a imagem assinada da versão `v1.0.2`, fixada pelo digest:
+
+```bash
+kubectl apply --dry-run=server -f k8s/deployment.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl rollout status deployment/api-pagamentos -n producao --timeout=180s
+kubectl get deployment,pods,service -n producao -o wide
+```
+
+Para acessar a API, mantenha o port-forward aberto em um terminal:
+
+```bash
+kubectl port-forward -n producao service/api-pagamentos 8080:80
+```
+
+Em outro terminal, faça o health check:
+
+```bash
+curl http://localhost:8080/health
+```
+
+O resultado esperado é `{"status":"ok"}`. As saídas reais desses testes estão em `evidencias/admission-denied-real.txt`, `evidencias/admission-allowed-real.txt`, `evidencias/deployment-real.txt` e `evidencias/healthcheck-real.json`.
 
 ## Dependency-Track, auditoria e dashboard
 
@@ -129,7 +173,7 @@ make demo-dashboard
 # abrir http://localhost:3001/d/api-pagamentos-compliance
 ```
 
-Os cinco KPIs são taxa de releases conformes, imagens assinadas, cobertura de SBOM, testes de policy aprovados e vulnerabilidades críticas. `evidencias/dashboard-exemplo.svg` é uma visão de exemplo; o JSON provisionado contém consultas PromQL funcionais.
+Os cinco KPIs são taxa de releases conformes, imagens assinadas, cobertura de SBOM, testes de policy aprovados e vulnerabilidades críticas. O dashboard provisionado contém consultas PromQL funcionais. `evidencias/dashboard-real.png` registra a execução real e `evidencias/dashboard-exemplo.svg` permanece como ilustração.
 
 ## Mapeamento para frameworks
 
@@ -148,4 +192,6 @@ O nível SLSA efetivo depende da execução hospedada e da configuração do rep
 
 ## Limites e evidência honesta
 
-Este checkout não contém credenciais, registry nem cluster. Portanto, assinatura OIDC, transparency log e bloqueio de admission só podem ser comprovados numa execução GitHub/cluster real. Os arquivos de exemplo são claramente identificados; os workflows produzem os artefatos reais necessários para substituir as amostras.
+O repositório não armazena credenciais. A assinatura OIDC e as atestações são geradas pelo GitHub Actions e ficam vinculadas à imagem no GHCR. Os assets completos de SBOM, licenças, Trivy e Dependency-Track estão na release `v1.0.2`; cópias baixadas para `evidencias/release-*` são ignoradas pelo Git para evitar duplicação.
+
+As evidências com sufixo `-real` foram obtidas na execução local com Kubernetes e Grafana. Os arquivos com `-exemplo` são amostras identificadas e não devem ser apresentados como resultado de uma nova execução.
