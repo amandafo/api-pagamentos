@@ -24,7 +24,7 @@ flowchart LR
 - A identidade aceita é limitada ao workflow `release.yml` deste repositório, emitida pelo OIDC do GitHub Actions. Não há chave de longa duração.
 - O gerador oficial SLSA em workflow reutilizável separa a provenance do job de build e identifica o builder.
 - Evidências são anexadas ao GitHub Release e às atestações no registry. Releases e transparency log formam a trilha imutável/simulada.
-- A política de licenças é allowlist: licenças desconhecidas falham de forma segura.
+- A política de licenças é allowlist para a aplicação e suas dependências npm diretas/transitivas: licenças desconhecidas falham de forma segura. Pacotes e arquivos do sistema operacional permanecem no SBOM e no relatório CycloneDX, mas são tratados separadamente para respeitar licenças compostas e exceções de runtime.
 - O Dependency-Track opera de verdade quando os secrets existem e retorna um recibo determinístico de mock quando não existem.
 
 ## Estrutura

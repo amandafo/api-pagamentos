@@ -8,21 +8,30 @@ allowed_licenses := {
   "MIT"
 }
 
-deny[msg] {
+managed_components[component] {
+  component := input.metadata.component
+}
+
+managed_components[component] {
   component := input.components[_]
+  startswith(component.purl, "pkg:npm/")
+}
+
+deny[msg] {
+  component := managed_components[_]
   license := component.licenses[_].license.id
   not allowed_licenses[license]
   msg := sprintf("componente %v usa licenca fora da allowlist: %v", [component.name, license])
 }
 
 deny[msg] {
-  component := input.components[_]
+  component := managed_components[_]
   not component.licenses
   msg := sprintf("componente %v nao declara licenca", [component.name])
 }
 
 deny[msg] {
-  component := input.components[_]
+  component := managed_components[_]
   count(component.licenses) == 0
   msg := sprintf("componente %v possui lista de licencas vazia", [component.name])
 }

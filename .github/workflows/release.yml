@@ -48,7 +48,8 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           jq --arg hash "${DIGEST#sha256:}" \
-            '.metadata.component.hashes = [{"alg":"SHA-256","content":$hash}]' \
+            '.metadata.component.hashes = [{"alg":"SHA-256","content":$hash}] |
+             .metadata.component.licenses = [{"license":{"id":"Apache-2.0"}}]' \
             sbom.cdx.json > sbom.cdx.tmp.json
           mv sbom.cdx.tmp.json sbom.cdx.json
       - uses: anchore/sbom-action@v0
@@ -70,7 +71,9 @@ jobs:
         run: |
           opa eval --format pretty --data policies/rego/license_policy.rego \
             --input sbom.cdx.json 'data.supply.license.deny'
-          test "$(opa eval --format raw --data policies/rego/license_policy.rego --input sbom.cdx.json 'count(data.supply.license.deny)')" = 0
+          violations="$(opa eval --format raw --data policies/rego/license_policy.rego --input sbom.cdx.json 'count(data.supply.license.deny)')"
+          echo "Total de violacoes de licenca: $violations"
+          [[ "$violations" == "0" ]]
       - name: Scan de vulnerabilidades
         uses: aquasecurity/trivy-action@v0.36.0
         with:
