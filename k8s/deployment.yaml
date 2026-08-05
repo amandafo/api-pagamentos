@@ -22,7 +22,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: api
-          image: ghcr.io/amandafo/api-pagamentos@sha256:SUBSTITUIR_PELO_DIGEST
+          image: ghcr.io/amandafo/api-pagamentos@sha256:3eab0f9da138e334db15934f6e5cefbf0a9f7ac58f06e13d437c69e3e5c36cb0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
