@@ -1,0 +1,33 @@
+apiVersion: policy.sigstore.dev/v1beta1
+kind: ClusterImagePolicy
+metadata:
+  name: api-pagamentos-signed
+spec:
+  images:
+    - glob: "ghcr.io/amandafo/api-pagamentos**"
+  authorities:
+    - keyless:
+        url: https://fulcio.sigstore.dev
+        identities:
+          - issuer: https://token.actions.githubusercontent.com
+            subjectRegExp: "^https://github.com/amandafo/api-pagamentos/.github/workflows/release.yml@refs/tags/v.*$"
+      ctlog:
+        url: https://rekor.sigstore.dev
+      attestations:
+        - name: must-have-sbom
+          predicateType: https://cyclonedx.org/bom
+          policy:
+            type: cue
+            data: |
+              predicate: {
+                bomFormat: "CycloneDX"
+                components: [...]
+              }
+        - name: must-have-provenance
+          predicateType: https://slsa.dev/provenance/v1
+          policy:
+            type: cue
+            data: |
+              predicate: {
+                runDetails: builder: id: =~"^https://github.com/slsa-framework/slsa-github-generator/"
+              }

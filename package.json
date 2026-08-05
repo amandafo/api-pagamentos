@@ -1,0 +1,14 @@
+{
+  "name": "api-pagamentos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API ficticia usada para demonstrar compliance continuo de software supply chain",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

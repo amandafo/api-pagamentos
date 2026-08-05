@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: intruso
+  namespace: producao
+spec:
+  containers:
+    - name: intruso
+      image: ghcr.io/amandafo/api-pagamentos:fake
+  restartPolicy: Never

@@ -1,0 +1,44 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "type": "stat", "title": "Releases conformes (%)", "id": 1,
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+      "targets": [{"expr": "compliance_release_rate", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "thresholds": {"mode": "absolute", "steps": [{"color": "red"}, {"color": "green", "value": 95}]}}, "overrides": []}
+    },
+    {
+      "type": "stat", "title": "Imagens assinadas (%)", "id": 2,
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+      "targets": [{"expr": "compliance_signed_images_rate", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent"}, "overrides": []}
+    },
+    {
+      "type": "stat", "title": "Cobertura de SBOM (%)", "id": 3,
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+      "targets": [{"expr": "compliance_sbom_coverage_rate", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percent"}, "overrides": []}
+    },
+    {
+      "type": "stat", "title": "Testes de policy aprovados", "id": 4,
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+      "targets": [{"expr": "compliance_policy_tests_passed", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+    },
+    {
+      "type": "stat", "title": "Vulnerabilidades criticas", "id": 5,
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 8},
+      "targets": [{"expr": "compliance_critical_vulnerabilities", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green"}, {"color": "red", "value": 1}]}}, "overrides": []}
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": ["compliance", "supply-chain"],
+  "templating": {"list": []},
+  "time": {"from": "now-30d", "to": "now"},
+  "title": "API Pagamentos - Compliance Continuo",
+  "uid": "api-pagamentos-compliance",
+  "version": 1
+}

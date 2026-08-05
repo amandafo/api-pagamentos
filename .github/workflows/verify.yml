@@ -1,0 +1,69 @@
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  policy-as-code:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: open-policy-agent/setup-opa@v2
+        with:
+          version: 0.68.0
+      - name: Testar cinco policies Rego
+        run: opa test --format=pretty policies/
+
+  sbom-and-container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build local
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: api-pagamentos:pr
+      - uses: anchore/sbom-action@v0
+        with:
+          image: api-pagamentos:pr
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+          upload-artifact: false
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: api-pagamentos:pr
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+      - name: Validar SBOM pela policy
+        uses: open-policy-agent/setup-opa@v2
+        with:
+          version: 0.68.0
+      - run: |
+          violations="$(opa eval --format raw --data policies/rego/sbom_required.rego --input sbom.cdx.json 'count(data.supply.sbom.deny)')"
+          test "$violations" = "0"
+
+  workflow-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: raven-actions/actionlint@v2

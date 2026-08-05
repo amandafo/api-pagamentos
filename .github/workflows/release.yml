@@ -1,0 +1,138 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions: {}
+
+jobs:
+  build-sign-attest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        name: Definir imagem em lowercase
+        shell: bash
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - id: build
+        name: Build e push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.image }}:${{ github.ref_name }}
+          provenance: false
+      - uses: sigstore/cosign-installer@v3
+      - uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+          upload-artifact: false
+      - uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: false
+      - name: Analisar SBOM CycloneDX
+        run: |
+          docker run --rm -v "$PWD:/work" cyclonedx/cyclonedx-cli:0.27.2 \
+            analyze --input-file /work/sbom.cdx.json --output-format json --output-file /work/license-analysis.json
+      - uses: open-policy-agent/setup-opa@v2
+        with:
+          version: 0.68.0
+      - name: Aplicar allowlist de licencas
+        run: |
+          opa eval --format pretty --data policies/rego/license_policy.rego \
+            --input sbom.cdx.json 'data.supply.license.deny'
+          test "$(opa eval --format raw --data policies/rego/license_policy.rego --input sbom.cdx.json 'count(data.supply.license.deny)')" = 0
+      - name: Scan de vulnerabilidades
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}
+          format: cosign-vuln
+          output: trivy.json
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+      - name: Assinar e atestar SBOMs (keyless OIDC)
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          cosign sign --yes "$IMAGE@$DIGEST"
+          cosign attest --yes --predicate sbom.cdx.json --type cyclonedx "$IMAGE@$DIGEST"
+          cosign attest --yes --predicate sbom.spdx.json --type spdx "$IMAGE@$DIGEST"
+          cosign attest --yes --predicate trivy.json --type vuln "$IMAGE@$DIGEST"
+      - name: Dependency-Track real ou mockado
+        env:
+          DT_URL: ${{ secrets.DEPENDENCY_TRACK_URL }}
+          DT_API_KEY: ${{ secrets.DEPENDENCY_TRACK_API_KEY }}
+          PROJECT_NAME: api-pagamentos
+          PROJECT_VERSION: ${{ github.ref_name }}
+        run: python3 scripts/consulta_dt.py submit sbom.cdx.json | tee dependency-track.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: compliance-${{ github.ref_name }}
+          path: |
+            sbom.cdx.json
+            sbom.spdx.json
+            license-analysis.json
+            trivy.json
+            dependency-track.log
+
+  provenance:
+    needs: build-sign-attest
+    permissions:
+      actions: read
+      id-token: write
+      packages: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: ${{ needs.build-sign-attest.outputs.image }}
+      digest: ${{ needs.build-sign-attest.outputs.digest }}
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  verify-and-release:
+    needs: [build-sign-attest, provenance]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: compliance-${{ github.ref_name }}
+      - uses: sigstore/cosign-installer@v3
+      - name: Verificar assinatura e atestacoes
+        env:
+          TARGET: ${{ needs.build-sign-attest.outputs.image }}@${{ needs.build-sign-attest.outputs.digest }}
+          IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/release.yml@refs/tags/${{ github.ref_name }}
+        run: |
+          cosign verify "$TARGET" --certificate-identity "$IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com
+          cosign verify-attestation "$TARGET" --type cyclonedx --certificate-identity "$IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com
+          cosign verify-attestation "$TARGET" --type slsaprovenance --certificate-identity-regexp '^https://github.com/slsa-framework/slsa-github-generator/' --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - name: Publicar release e evidencias imutaveis
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" --generate-notes \
+            sbom.cdx.json sbom.spdx.json license-analysis.json trivy.json dependency-track.log

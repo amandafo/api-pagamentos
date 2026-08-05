@@ -1,0 +1,4 @@
+{
+  "allowed": ["Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "MIT"],
+  "deniedExamples": ["AGPL-3.0-only", "GPL-3.0-only", "SSPL-1.0"]
+}

@@ -1,0 +1,4 @@
+EXEMPLO ESPERADO — NAO E LOG DE UMA EXECUCAO REAL
+
+Error from server (BadRequest): admission webhook "policy.sigstore.dev" denied the request:
+validation failed: failed policy: api-pagamentos-signed: no matching signatures

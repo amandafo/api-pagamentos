@@ -1,0 +1,29 @@
+name: monthly-audit
+
+on:
+  schedule:
+    - cron: '17 3 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+  id-token: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: sigstore/cosign-installer@v3
+      - name: Gerar relatorio
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          IMAGE_REPOSITORY: ghcr.io/${{ github.repository }}
+        run: scripts/gera_relatorio.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: auditoria-${{ github.run_id }}
+          path: relatorios/
+          retention-days: 90

@@ -1,0 +1,6 @@
+# Dados demonstrativos; em producao sao gerados pelo relatorio mensal.
+compliance_release_rate 100
+compliance_signed_images_rate 100
+compliance_sbom_coverage_rate 100
+compliance_policy_tests_passed 15
+compliance_critical_vulnerabilities 0
