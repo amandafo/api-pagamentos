@@ -1,0 +1,6 @@
+Error from server (BadRequest): error when creating "k8s/demo-unsigned.yaml": admission webhook "policy.sigstore.dev" denied the request: validation failed: failed policy: api-pagamentos-provenance: spec.containers[0].image
+ghcr.io/amandafo/api-pagamentos:v1.0.1@sha256:aa6e8b2cfe019a8143928936fe1a791d2bc0f9f835febe4b903876b0c2012309 attestation keyless validation failed for authority slsa-generator-provenance for ghcr.io/amandafo/api-pagamentos@sha256:aa6e8b2cfe019a8143928936fe1a791d2bc0f9f835febe4b903876b0c2012309: no matching attestations: 
+failed policy: api-pagamentos-sbom: spec.containers[0].image
+ghcr.io/amandafo/api-pagamentos:v1.0.1@sha256:aa6e8b2cfe019a8143928936fe1a791d2bc0f9f835febe4b903876b0c2012309 attestation keyless validation failed for authority release-workflow-sbom for ghcr.io/amandafo/api-pagamentos@sha256:aa6e8b2cfe019a8143928936fe1a791d2bc0f9f835febe4b903876b0c2012309: no matching attestations: 
+failed policy: api-pagamentos-signature: spec.containers[0].image
+ghcr.io/amandafo/api-pagamentos:v1.0.1@sha256:aa6e8b2cfe019a8143928936fe1a791d2bc0f9f835febe4b903876b0c2012309 signature keyless validation failed for authority release-workflow-signature for ghcr.io/amandafo/api-pagamentos@sha256:aa6e8b2cfe019a8143928936fe1a791d2bc0f9f835febe4b903876b0c2012309: no signatures found

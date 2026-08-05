@@ -4,7 +4,17 @@ metadata:
   name: intruso
   namespace: producao
 spec:
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   containers:
     - name: intruso
-      image: ghcr.io/amandafo/api-pagamentos:fake
+      image: ghcr.io/amandafo/api-pagamentos:v1.0.1
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
   restartPolicy: Never

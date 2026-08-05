@@ -1,12 +1,30 @@
 apiVersion: policy.sigstore.dev/v1beta1
 kind: ClusterImagePolicy
 metadata:
-  name: api-pagamentos-signed
+  name: api-pagamentos-signature
 spec:
   images:
     - glob: "ghcr.io/amandafo/api-pagamentos**"
   authorities:
-    - keyless:
+    - name: release-workflow-signature
+      keyless:
+        url: https://fulcio.sigstore.dev
+        identities:
+          - issuer: https://token.actions.githubusercontent.com
+            subjectRegExp: "^https://github.com/amandafo/api-pagamentos/.github/workflows/release.yml@refs/tags/v.*$"
+      ctlog:
+        url: https://rekor.sigstore.dev
+---
+apiVersion: policy.sigstore.dev/v1beta1
+kind: ClusterImagePolicy
+metadata:
+  name: api-pagamentos-sbom
+spec:
+  images:
+    - glob: "ghcr.io/amandafo/api-pagamentos**"
+  authorities:
+    - name: release-workflow-sbom
+      keyless:
         url: https://fulcio.sigstore.dev
         identities:
           - issuer: https://token.actions.githubusercontent.com
@@ -23,11 +41,29 @@ spec:
                 bomFormat: "CycloneDX"
                 components: [...]
               }
+---
+apiVersion: policy.sigstore.dev/v1beta1
+kind: ClusterImagePolicy
+metadata:
+  name: api-pagamentos-provenance
+spec:
+  images:
+    - glob: "ghcr.io/amandafo/api-pagamentos**"
+  authorities:
+    - name: slsa-generator-provenance
+      keyless:
+        url: https://fulcio.sigstore.dev
+        identities:
+          - issuer: https://token.actions.githubusercontent.com
+            subjectRegExp: "^https://github.com/slsa-framework/slsa-github-generator/.*$"
+      ctlog:
+        url: https://rekor.sigstore.dev
+      attestations:
         - name: must-have-provenance
-          predicateType: https://slsa.dev/provenance/v1
+          predicateType: https://slsa.dev/provenance/v0.2
           policy:
             type: cue
             data: |
               predicate: {
-                runDetails: builder: id: =~"^https://github.com/slsa-framework/slsa-github-generator/"
+                builder: id: =~"^https://github.com/slsa-framework/slsa-github-generator/"
               }

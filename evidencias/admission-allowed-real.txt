@@ -1,0 +1,2 @@
+deployment.apps/api-pagamentos created
+service/api-pagamentos created

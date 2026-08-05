@@ -1,12 +1,12 @@
 package supply.provenance
 
 deny[msg] {
-  input.predicateType != "https://slsa.dev/provenance/v1"
-  msg := "predicateType deve ser SLSA Provenance v1"
+  input.predicateType != "https://slsa.dev/provenance/v0.2"
+  msg := "predicateType deve ser SLSA Provenance v0.2"
 }
 
 deny[msg] {
-  not startswith(input.predicate.runDetails.builder.id, "https://github.com/slsa-framework/slsa-github-generator/")
+  not startswith(input.predicate.builder.id, "https://github.com/slsa-framework/slsa-github-generator/")
   msg := "builder SLSA nao confiavel"
 }
 

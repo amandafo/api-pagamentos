@@ -3,6 +3,7 @@ kind: Namespace
 metadata:
   name: producao
   labels:
+    policy.sigstore.dev/include: "true"
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
