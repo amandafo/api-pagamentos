@@ -47,6 +47,13 @@ jobs:
           format: cyclonedx-json
           output-file: sbom.cdx.json
           upload-artifact: false
+      - name: Vincular SBOM ao hash da imagem
+        run: |
+          digest="$(docker image inspect --format '{{.Id}}' api-pagamentos:pr)"
+          jq --arg hash "${digest#sha256:}" \
+            '.metadata.component.hashes = [{"alg":"SHA-256","content":$hash}]' \
+            sbom.cdx.json > sbom.cdx.tmp.json
+          mv sbom.cdx.tmp.json sbom.cdx.json
       - uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: api-pagamentos:pr
@@ -59,8 +66,10 @@ jobs:
         with:
           version: 0.68.0
       - run: |
+          opa eval --format pretty --data policies/rego/sbom_required.rego --input sbom.cdx.json 'data.supply.sbom.deny'
           violations="$(opa eval --format raw --data policies/rego/sbom_required.rego --input sbom.cdx.json 'count(data.supply.sbom.deny)')"
-          test "$violations" = "0"
+          echo "Total de violacoes SBOM: $violations"
+          [[ "$violations" == "0" ]]
 
   workflow-lint:
     runs-on: ubuntu-latest

@@ -43,6 +43,14 @@ jobs:
           format: cyclonedx-json
           output-file: sbom.cdx.json
           upload-artifact: false
+      - name: Vincular SBOM CycloneDX ao digest publicado
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          jq --arg hash "${DIGEST#sha256:}" \
+            '.metadata.component.hashes = [{"alg":"SHA-256","content":$hash}]' \
+            sbom.cdx.json > sbom.cdx.tmp.json
+          mv sbom.cdx.tmp.json sbom.cdx.json
       - uses: anchore/sbom-action@v0
         with:
           image: ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}
