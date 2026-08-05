@@ -1,0 +1,9 @@
+NAME                             READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS   IMAGES                                                                                                    SELECTOR
+deployment.apps/api-pagamentos   2/2     2            2           2m28s   api          ghcr.io/amandafo/api-pagamentos@sha256:3eab0f9da138e334db15934f6e5cefbf0a9f7ac58f06e13d437c69e3e5c36cb0   app.kubernetes.io/name=api-pagamentos
+
+NAME                                 READY   STATUS    RESTARTS   AGE     IP           NODE                       NOMINATED NODE   READINESS GATES
+pod/api-pagamentos-bc79d54bb-wz7n8   1/1     Running   0          2m24s   10.244.0.6   compliance-control-plane   <none>           <none>
+pod/api-pagamentos-bc79d54bb-x2c22   1/1     Running   0          2m22s   10.244.0.7   compliance-control-plane   <none>           <none>
+
+NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE     SELECTOR
+service/api-pagamentos   ClusterIP   10.96.161.241   <none>        80/TCP    2m26s   app.kubernetes.io/name=api-pagamentos

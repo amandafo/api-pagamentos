@@ -3,33 +3,33 @@
   "editable": true,
   "panels": [
     {
-      "type": "stat", "title": "Releases conformes (%)", "id": 1,
+      "type": "stat", "title": "Releases conformes (%)", "id": 1, "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
-      "targets": [{"expr": "compliance_release_rate", "refId": "A"}],
+      "targets": [{"expr": "compliance_release_rate", "refId": "A", "instant": true, "range": false, "editorMode": "code", "datasource": {"type": "prometheus", "uid": "prometheus"}}],
       "fieldConfig": {"defaults": {"unit": "percent", "thresholds": {"mode": "absolute", "steps": [{"color": "red"}, {"color": "green", "value": 95}]}}, "overrides": []}
     },
     {
-      "type": "stat", "title": "Imagens assinadas (%)", "id": 2,
+      "type": "stat", "title": "Imagens assinadas (%)", "id": 2, "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
-      "targets": [{"expr": "compliance_signed_images_rate", "refId": "A"}],
-      "fieldConfig": {"defaults": {"unit": "percent"}, "overrides": []}
+      "targets": [{"expr": "compliance_signed_images_rate", "refId": "A", "instant": true, "range": false, "editorMode": "code", "datasource": {"type": "prometheus", "uid": "prometheus"}}],
+      "fieldConfig": {"defaults": {"unit": "percent", "thresholds": {"mode": "absolute", "steps": [{"color": "red"}, {"color": "green", "value": 95}]}}, "overrides": []}
     },
     {
-      "type": "stat", "title": "Cobertura de SBOM (%)", "id": 3,
+      "type": "stat", "title": "Cobertura de SBOM (%)", "id": 3, "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
-      "targets": [{"expr": "compliance_sbom_coverage_rate", "refId": "A"}],
-      "fieldConfig": {"defaults": {"unit": "percent"}, "overrides": []}
+      "targets": [{"expr": "compliance_sbom_coverage_rate", "refId": "A", "instant": true, "range": false, "editorMode": "code", "datasource": {"type": "prometheus", "uid": "prometheus"}}],
+      "fieldConfig": {"defaults": {"unit": "percent", "thresholds": {"mode": "absolute", "steps": [{"color": "red"}, {"color": "green", "value": 95}]}}, "overrides": []}
     },
     {
-      "type": "stat", "title": "Testes de policy aprovados", "id": 4,
+      "type": "stat", "title": "Testes de policy aprovados", "id": 4, "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
-      "targets": [{"expr": "compliance_policy_tests_passed", "refId": "A"}],
+      "targets": [{"expr": "compliance_policy_tests_passed", "refId": "A", "instant": true, "range": false, "editorMode": "code", "datasource": {"type": "prometheus", "uid": "prometheus"}}],
       "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
     },
     {
-      "type": "stat", "title": "Vulnerabilidades criticas", "id": 5,
+      "type": "stat", "title": "Vulnerabilidades criticas", "id": 5, "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 8, "w": 6, "x": 0, "y": 8},
-      "targets": [{"expr": "compliance_critical_vulnerabilities", "refId": "A"}],
+      "targets": [{"expr": "compliance_critical_vulnerabilities", "refId": "A", "instant": true, "range": false, "editorMode": "code", "datasource": {"type": "prometheus", "uid": "prometheus"}}],
       "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green"}, {"color": "red", "value": 1}]}}, "overrides": []}
     }
   ],

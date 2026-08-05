@@ -1,0 +1,5 @@
+# Artefatos baixados de releases ja preservados no GitHub
+evidencias/release-*/
+
+# Saidas locais geradas pela auditoria
+relatorios/
